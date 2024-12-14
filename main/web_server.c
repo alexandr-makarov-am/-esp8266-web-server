@@ -39,7 +39,33 @@ static esp_err_t main_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+static char* get_http_query_param(httpd_req_t *req, const char* key) {
+    char param[32] = "";
+    int length = httpd_req_get_url_query_len(req) + 1;
+    if (length > 1) {
+        char* buf = (char*)malloc(sizeof(char*) * length);
+        switch(httpd_req_get_url_query_str(req, buf, length)) {
+            case ESP_OK:
+                if (httpd_query_key_value(buf, key, param, sizeof(param)) != ESP_OK) {
+                    ESP_LOGE(TAG, "Getting query value error");
+                }
+                ESP_LOGI(TAG, "%s", param);
+                break;
+            case ESP_ERR_HTTPD_INVALID_REQ:
+                ESP_LOGE(TAG, "INV_REQ");
+                break;
+            case ESP_ERR_HTTPD_RESULT_TRUNC:
+                ESP_LOGE(TAG,"RES_TRUNC");
+                break;
+
+        }
+        free(buf);
+    }
+    return param;
+}
+
 static esp_err_t spa_upload_post_handler(httpd_req_t *req) {
+    get_http_query_param(req, "filename");
     FILE* f = fopen("/www/index.html", "w");
     if (f == NULL) {
         ESP_LOGE(TAG, "Failed to open file for writing");
